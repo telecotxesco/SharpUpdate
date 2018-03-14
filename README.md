@@ -26,7 +26,7 @@ public string ApplicationName { get { return "MyDesktopApp"; } }
 public string ApplicationID { get { return "MyDesktopApp"; } }
 public Assembly ApplicationAssembly { get { return Assembly.GetExecutingAssembly(); } }
 public Icon ApplicationIcon { get { return Icon; } }
-public Uri UpdateXmlLocation { get { return new Uri("https://raw.githubusercontent.com/henryxrl/SharpUpdate/master/project.xml"); } }
+public Uri UpdateXmlLocation { get { return new Uri("https://example.com/updates/project.xml"); } }
 public Form Context { get { return this; } }
 #endregion
 ```
