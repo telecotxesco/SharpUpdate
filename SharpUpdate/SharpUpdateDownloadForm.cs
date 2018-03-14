@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace SharpUpdate
@@ -18,56 +20,120 @@ namespace SharpUpdate
         private WebClient webClient;
 
         /// <summary>
-        /// The thread to hash the file on
+        /// The thread to control each download
         /// </summary>
         private BackgroundWorker bgWorker;
 
         /// <summary>
+        /// Flag to control the download turn
+        private AutoResetEvent downloadComplete;
+
+        /// <summary>
         /// A temp file name to download to
         /// </summary>
-        private string tempFile;
+        private List<Uri> locations;
+
+        /// <summary>
+        /// A temp file name to download to
+        /// </summary>
+        private List<string> tempFiles;
+
+        /// <summary>
+        /// A temp folder name to download to
+        /// </summary>
+        private string tempFolder;
 
         /// <summary>
         /// The MD5 hash of the file to download
         /// </summary>
-        private string md5;
+        private List<string> md5;
 
         /// <summary>
-        /// Gets the temp file path for the downloaded file
+        /// Gets the temp file path for the downloaded files
         /// </summary>
-        internal string TempFilePath
+        internal List<string> TempFilesPath
         {
-            get { return this.tempFile; }
+            get { return this.tempFiles; }
         }
+
+        /// <summary>
+        /// Gets the temp folder for the downloaded files
+        /// </summary>
+        internal string TempFolder
+        {
+            get { return this.tempFolder; }
+        }
+
 
         /// <summary>
         /// Creates a new SharpUpdateDownloadForm
         /// </summary>
-        internal SharpUpdateDownloadForm(Uri location, string md5, Icon programIcon)
+        internal SharpUpdateDownloadForm(List<Uri> locations, List<string> md5, Icon programIcon)
         {
             InitializeComponent();
 
             if (programIcon != null)
                 this.Icon = programIcon;
 
-            // Set the temp file name and create new 0-byte file
-            tempFile = Path.GetTempFileName();
-
+            this.locations = locations;
+            this.tempFiles = new List<string>();
             this.md5 = md5;
-
-            // Set up WebClient to download file
-            webClient = new WebClient();
-            webClient.DownloadProgressChanged += new DownloadProgressChangedEventHandler(webClient_DownloadProgressChanged);
-            webClient.DownloadFileCompleted += new AsyncCompletedEventHandler(webClient_DownloadFileCompleted);
+            this.tempFolder = Guid.NewGuid().ToString();
 
             // Set up backgroundworker to hash file
             bgWorker = new BackgroundWorker();
-            bgWorker.DoWork += new DoWorkEventHandler(bgWorker_DoWork);
-            bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorker_RunWorkerCompleted);
+            bgWorker.DoWork += new DoWorkEventHandler(bgWorkerDownload_DoWork);
+            bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bgWorkerDownload_RunWorkerCompleted);
 
-            // Download file
-            try { webClient.DownloadFileAsync(location, this.tempFile); }
-            catch { this.DialogResult = DialogResult.No; this.Close(); }
+            bgWorker.RunWorkerAsync(new List<string>[] { this.tempFiles, this.md5 });
+        }
+
+        private void bgWorkerDownload_DoWork(object sender, DoWorkEventArgs e)
+        {
+            try
+            {
+                foreach (Uri location in locations)
+                {
+                    downloadComplete = new AutoResetEvent(false);
+
+                    // Set up WebClient to download file
+                    webClient = new WebClient();
+                    webClient.DownloadProgressChanged += new DownloadProgressChangedEventHandler(webClient_DownloadProgressChanged);
+                    webClient.DownloadFileCompleted += new AsyncCompletedEventHandler(webClient_DownloadFileCompleted);
+
+                    // Set the temp file name and create new 0-byte file
+                    string tempFile = Path.GetTempFileName();
+                    tempFiles.Add(tempFile);
+                    webClient.DownloadFileAsync(location, tempFile);
+
+                    // Wait until download is complete
+                    downloadComplete.WaitOne();
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message;
+                this.DialogResult = DialogResult.No; this.Close();
+            }
+
+            // Check Hashes
+            int i = 0;
+            foreach (string tempFile in tempFiles)
+            {
+                if (Hasher.HashFile(tempFile, HashType.MD5).ToUpper() != md5[i].ToUpper()) { 
+                    e.Result = DialogResult.No; this.Close();
+                }
+                else
+                    e.Result = DialogResult.OK;
+                i++;
+            }
+            i = 0;
+        }
+
+        private void bgWorkerDownload_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            this.DialogResult = (DialogResult)e.Result;
+            this.Close();
         }
 
         /// <summary>
@@ -76,8 +142,12 @@ namespace SharpUpdate
         private void webClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
             // Update progressbar on download
-            this.lblProgress.Text = String.Format("Downloaded {0} of {1}", FormatBytes(e.BytesReceived, 1, true), FormatBytes(e.TotalBytesToReceive, 1, true));
-            this.progressBar.Value = e.ProgressPercentage;
+            lblProgress.Invoke((MethodInvoker)delegate {
+                lblProgress.Text = String.Format("Descargados {0} de {1}", FormatBytes(e.BytesReceived, 1, true), FormatBytes(e.TotalBytesToReceive, 1, true));
+            });
+            progressBar.Invoke((MethodInvoker)delegate {
+                progressBar.Value = e.ProgressPercentage;
+            });
         }
 
         private void webClient_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
@@ -94,12 +164,7 @@ namespace SharpUpdate
             }
             else
             {
-                // Show the "Hashing" label and set the progressbar to marquee
-                this.lblProgress.Text = "Verifying Download...";
-                this.progressBar.Style = ProgressBarStyle.Marquee;
-
-                // Start the hashing
-                bgWorker.RunWorkerAsync(new string[] { this.tempFile, this.md5 });
+                downloadComplete.Set();
             }
         }
 
@@ -151,24 +216,6 @@ namespace SharpUpdate
                 formatString += byteType;
 
             return String.Format(formatString, newBytes);
-        }
-
-        private void bgWorker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            string file = ((string[])e.Argument)[0];
-            string updateMD5 = ((string[])e.Argument)[1];
-
-            // Hash the file and compare to the hash in the update xml
-            if (Hasher.HashFile(file, HashType.MD5).ToUpper() != updateMD5.ToUpper())
-                e.Result = DialogResult.No;
-            else
-                e.Result = DialogResult.OK;
-        }
-
-        private void bgWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            this.DialogResult = (DialogResult)e.Result;
-            this.Close();
         }
 
         private void SharpUpdateDownloadForm_FormClosed(object sender, FormClosedEventArgs e)

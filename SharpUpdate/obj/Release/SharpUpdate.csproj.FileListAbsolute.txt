@@ -1,0 +1,9 @@
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\bin\Release\SharpUpdate.dll
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\bin\Release\SharpUpdate.pdb
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.Properties.Resources.resources
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.SharpUpdateAcceptForm.resources
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.SharpUpdateDownloadForm.resources
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.SharpUpdateInfoForm.resources
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.csproj.GenerateResource.Cache
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.dll
+D:\PROJECTS\BlueBay.WifiTicket\tags\SharpUpdate\SharpUpdate\obj\Release\SharpUpdate.pdb

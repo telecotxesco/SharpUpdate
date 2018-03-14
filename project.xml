@@ -1,12 +1,23 @@
 <?xml version="1.0"?> 
 <sharpUpdate> 
-    <update appID="TestApp"> 
-        <version>3.0.0.0</version> 
-        <url>https://raw.githubusercontent.com/henryxrl/SharpUpdate/master/TestApp/bin/Debug/TestApp.exe</url> 
-        <fileName>TestApp.exe</fileName> 
-        <md5>F16F9270971EAEAE8E313B32E8FF0814</md5>
-        <description>Update: 06/19/2014:
-        1. Added notification message when the current version is already the latest.</description> 
-        <launchArgs></launchArgs> 
+    <update appID="MyDesktopApp"> 
+        <version>1.1.0.0</version> 
+        <files>
+			<file>
+				<url>https://example.com/updates/setup.exe</url> 
+				<fileName>setup.exe</fileName> 
+				<md5>F16F9270971EAEAE8E313B32E8FF0814</md5>
+			</file>
+			<file>
+				<url>https://example.com/updates/Library.dll</url> 
+				<fileName>Library.dll</fileName> 
+				<md5>AE8E313B9270971EAE81432E8FF0F16F</md5>
+			</file>
+		</files>
+        <description>Update: 14/03/2018:
+1. Multiple files.
+2. Executable file.</description> 
+        <launchFile>setup.exe</launchFile> 
+		<launchArgs></launchArgs> 
     </update> 
 </sharpUpdate>

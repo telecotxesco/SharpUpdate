@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Windows.Forms;
 using System.Xml;
@@ -11,10 +12,9 @@ namespace SharpUpdate
     internal class SharpUpdateXml
     {
         private Version version;
-        private Uri uri;
-        private string fileName;
-        private string md5;
+        private List<SharpUpdateXmlFile> files;
         private string description;
+        private string launchFile;
         private string launchArgs;
 
         /// <summary>
@@ -28,26 +28,9 @@ namespace SharpUpdate
         /// <summary>
         /// The location of the update binary
         /// </summary>
-        internal Uri Uri
+        internal List<SharpUpdateXmlFile> Files
         {
-            get { return this.uri; }
-        }
-
-        /// <summary>
-        /// The file name of the binary
-        /// for use on local computer
-        /// </summary>
-        internal string FileName
-        {
-            get { return this.fileName; }
-        }
-
-        /// <summary>
-        /// The MD5 of the update's binary
-        /// </summary>
-        internal string MD5
-        {
-            get { return this.md5; }
+            get { return this.files; }
         }
 
         /// <summary>
@@ -56,6 +39,14 @@ namespace SharpUpdate
         internal string Description
         {
             get { return this.description; }
+        }
+
+        /// <summary>
+        /// The application to start
+        /// </summary>
+        internal string LaunchFile
+        {
+            get { return this.launchFile; }
         }
 
         /// <summary>
@@ -69,13 +60,12 @@ namespace SharpUpdate
         /// <summary>
         /// Creates a new SharpUpdateXml object
         /// </summary>
-        internal SharpUpdateXml(Version version, Uri uri, string fileName, string md5, string description, string launchArgs)
+        internal SharpUpdateXml(Version version, List<SharpUpdateXmlFile> files, string description, string launchFile, string launchArgs)
         {
             this.version = version;
-            this.uri = uri;
-            this.fileName = fileName;
-            this.md5 = md5;
+            this.files = files;
             this.description = description;
+            this.launchFile = launchFile;
             this.launchArgs = launchArgs;
         }
 
@@ -118,7 +108,8 @@ namespace SharpUpdate
         internal static SharpUpdateXml Parse(Uri location, string appID)
         {
             Version version = null;
-            string url = "", fileName = "", md5 = "", description = "", launchArgs = "";
+            List<SharpUpdateXmlFile> files = new List<SharpUpdateXmlFile>();
+            string description = "", launchArgs = "", launchFile = "";
 
             try
             {
@@ -137,13 +128,22 @@ namespace SharpUpdate
 
                 // Parse data
                 version = Version.Parse(updateNode["version"].InnerText);
-                url = updateNode["url"].InnerText;
-                fileName = updateNode["fileName"].InnerText;
-                md5 = updateNode["md5"].InnerText;
                 description = updateNode["description"].InnerText;
+                launchFile = updateNode["launchFile"].InnerText;
                 launchArgs = updateNode["launchArgs"].InnerText;
 
-				return new SharpUpdateXml(version, new Uri(url), fileName, md5, description, launchArgs);
+                XmlNodeList filesNodeList = doc.DocumentElement.GetElementsByTagName("file");
+
+                foreach (XmlNode fileNode in filesNodeList)
+                {
+                    files.Add(new SharpUpdateXmlFile() {
+                        Uri = new Uri(fileNode["url"].InnerText),
+                        FileName = fileNode["fileName"].InnerText,
+                        MD5 = fileNode["md5"].InnerText
+                    });
+                }
+
+				return new SharpUpdateXml(version, files, description, launchFile, launchArgs);
             }
 			catch { return null; }
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -91,17 +92,34 @@ namespace SharpUpdate
         /// <param name="update">The update xml info</param>
         private void DownloadUpdate(SharpUpdateXml update)
         {
-            SharpUpdateDownloadForm form = new SharpUpdateDownloadForm(update.Uri, update.MD5, this.applicationInfo.ApplicationIcon);
+            List<Uri> uri = new List<Uri>();
+            List<string> md5 = new List<string>();
+            foreach(SharpUpdateXmlFile file in update.Files)
+            {
+                uri.Add(file.Uri);
+                md5.Add(file.MD5);
+            }
+            SharpUpdateDownloadForm form = new SharpUpdateDownloadForm(uri, md5, this.applicationInfo.ApplicationIcon);
             DialogResult result = form.ShowDialog(this.applicationInfo.Context);
 
             // Download update
             if (result == DialogResult.OK)
             {
+                int i = 0;
+                Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), form.TempFolder));
+                foreach(string tempFile in form.TempFilesPath)
+                {
+                    string tempDestFile = Path.Combine(Path.GetTempPath(), form.TempFolder, update.Files[i].FileName );
+                    System.IO.File.Copy(tempFile, tempDestFile);
+                    i ++;
+                }
+
+                string executable = Path.Combine(Path.GetTempPath(), form.TempFolder, update.LaunchFile);
+
                 string currentPath = this.applicationInfo.ApplicationAssembly.Location;
-                string newPath = Path.GetDirectoryName(currentPath) + "\\" + update.FileName;
 
                 // "Install" it
-                UpdateApplication(form.TempFilePath, currentPath, newPath, update.LaunchArgs);
+                UpdateApplication(Path.Combine(Path.GetTempPath(), form.TempFolder), executable, update.LaunchArgs);
 
                 Application.Exit();
             }
@@ -115,19 +133,18 @@ namespace SharpUpdate
             }
         }
 
-        /// <summary>
+		/// <summary>
         /// Hack to close program, delete original, move the new one to that location
         /// </summary>
-        /// <param name="tempFilePath">The temporary file's path</param>
-        /// <param name="currentPath">The path of the current application</param>
-        /// <param name="newPath">The new path for the new file</param>
+        /// <param name="path">The temporary file's path</param>
+        /// <param name="executable">The executable file</param>
         /// <param name="launchArgs">The launch arguments</param>
-        private void UpdateApplication(string tempFilePath, string currentPath, string newPath, string launchArgs)
+        private void UpdateApplication(string path, string executable, string launchArgs)
         {
-            string argument = "/C choice /C Y /N /D Y /T 4 & Del /F /Q \"{0}\" & choice /C Y /N /D Y /T 2 & Move /Y \"{1}\" \"{2}\" & Start \"\" /D \"{3}\" \"{4}\" {5}";
+            string argument = "/C choice /C Y /N /D Y /T 1 & Start \"\" /D \"{0}\" \"{1}\" {2}";
 
             ProcessStartInfo Info = new ProcessStartInfo();
-            Info.Arguments = String.Format(argument, currentPath, tempFilePath, newPath, Path.GetDirectoryName(newPath), Path.GetFileName(newPath), launchArgs);
+            Info.Arguments = String.Format(argument, path, executable, launchArgs);
             Info.WindowStyle = ProcessWindowStyle.Hidden;
             Info.CreateNoWindow = true;
             Info.FileName = "cmd.exe";
