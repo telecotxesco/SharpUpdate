@@ -7,7 +7,7 @@ This version is capable to define multiple files to download. They are downloade
 ## For INSTALLERS only
 Instead of original SharpUpdate, it doesn't replace the files. You need to create an installer wich must be capable to uninstall current version of your program, and then install the new one.
 
-You can use Visual Studio Extension [Microsoft Visual Studio 2017 Installer Projects] (https://marketplace.visualstudio.com/items?itemName=VisualStudioProductTeam.MicrosoftVisualStudio2017InstallerProjects)
+You can use Visual Studio Extension [Microsoft Visual Studio 2017 Installer Projects](https://marketplace.visualstudio.com/items?itemName=VisualStudioProductTeam.MicrosoftVisualStudio2017InstallerProjects)
 
 # Usage
 ## The program
@@ -77,8 +77,5 @@ Where:
 * Define a <files> node for each file you want to download.
 * In the <launchFile> you define the executable.
 
-# Original author
-This is a fork from https://github.com/henryxrl/SharpUpdate
-
-# Credit
-SharpUpdate is modified from Auto Updater by BetterCoder on Youtube. His tutorial can be found here: http://goo.gl/n7btY
+# Credit. Original author
+This is a fork from Henryxrl. More info at https://github.com/henryxrl/SharpUpdate
